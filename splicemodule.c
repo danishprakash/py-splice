@@ -1,22 +1,68 @@
+#define _GNU_SOURCE
 #include <Python.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-static PyObject *SpliceError;
+// TODO: custom exceptions
+// TODO: comments and explanation
+// TODO: conditionals for different distros
+// TODO: better return mechanism
+// TODO: function declarations for all
+// TODO: abide by code guidelines for C programming language
+// TODO: make `from pysplice import splice` work
+
+size_t fsize(fd) {
+    size_t fsize;
+    fsize = lseek(fd, 0, SEEK_END);
+    return fsize;
+}
+
+ssize_t splice_copy(int fd_in, int fd_out) {
+    int fd_pipe[2];
+    size_t buf_size = 128;
+    size_t len = fsize(fd_in);
+    loff_t in_off = 0;
+    loff_t out_off = 0;
+
+    if (pipe(fd_pipe) < 0) {
+        perror("Error creating pipe");
+        return 1;
+    }
+
+    while(len > 0) {
+        if (buf_size > len) buf_size = len;
+        // splice data to pipe
+        if ((splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1) {
+            perror("assplice");
+            return -1;
+        }
+
+        // splice data from pipe to fd_out
+        if ((splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1) {
+            perror("splice");
+            return -1;
+        }
+
+        len -= buf_size;
+    }
+    return 1;
+}
 
 static PyObject *
 method_splice(PyObject *self, PyObject *args){
-    const char *command;
-    int sts;
+    int fd_in, fd_out;
+    int status = -1;
 
-    if (!PyArg_ParseTuple(args, "s", &command))
+    if (!PyArg_ParseTuple(args, "ii", &fd_in, &fd_out))
             return NULL;
 
-    sts = system(command);
-    if (sts < 0) {
-        PyErr_SetString(SpliceError, "Error executing splice(2) system call");
-        return NULL;
-    }
-
-    return PyLong_FromLong(sts);
+    status = splice_copy(fd_in, fd_out);
+    
+    return PyLong_FromLong(status);
 }
 
 static PyMethodDef SpliceMethods[] = {
@@ -26,10 +72,9 @@ static PyMethodDef SpliceMethods[] = {
 
 static struct PyModuleDef splicemodule = {
     PyModuleDef_HEAD_INIT,
-    "splice",   /* name of module */
-    NULL, /* module documentation, may be NULL */
-    -1,       /* size of per-interpreter state of the module,
-                 or -1 if the module keeps state in global variables. */
+    "splice",
+    NULL, 
+    -1,  
     SpliceMethods
 };
 
