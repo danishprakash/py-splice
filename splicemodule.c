@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+
 #include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,13 +15,16 @@
 // TODO: function declarations for all
 // TODO: abide by code guidelines for C programming language
 // TODO: make `from pysplice import splice` work
+// TODO: Write tests
 
+// return size of file using file descriptor number
 size_t fsize(fd) {
     size_t fsize;
     fsize = lseek(fd, 0, SEEK_END);
     return fsize;
 }
 
+// move data from fd_in tp fd_out using splice(2)
 ssize_t splice_copy(int fd_in, int fd_out) {
     int fd_pipe[2];
     size_t buf_size = 128;
@@ -52,6 +56,7 @@ ssize_t splice_copy(int fd_in, int fd_out) {
     return 1;
 }
 
+// TODO: check for splice(2) availability
 static PyObject *
 method_splice(PyObject *self, PyObject *args){
     int fd_in, fd_out;
@@ -83,8 +88,7 @@ PyInit_splice(void) {
     return PyModule_Create(&splicemodule);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     wchar_t *program = Py_DecodeLocale(argv[0], NULL);
     if (program == NULL) {
@@ -107,5 +111,6 @@ main(int argc, char *argv[])
     PyImport_ImportModule("splice");
 
     PyMem_RawFree(program);
+
     return 0;
 }
