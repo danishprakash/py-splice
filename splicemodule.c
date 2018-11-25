@@ -29,6 +29,7 @@ ssize_t splice_copy(int fd_in, int fd_out) {
     int fd_pipe[2];
     size_t buf_size = 128;
     size_t len = fsize(fd_in);
+    size_t bytes = 0;
     loff_t in_off = 0;
     loff_t out_off = 0;
 
@@ -37,23 +38,25 @@ ssize_t splice_copy(int fd_in, int fd_out) {
         return 1;
     }
 
+
     while(len > 0) {
-        if (buf_size > len) buf_size = len;
-        // splice data to pipe
-        if ((splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1) {
-            perror("assplice");
-            return -1;
-        }
+      if (buf_size > len) buf_size = len;
+      // splice data to pipe
+      if ((bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1) {
+        perror("splice");
+        return -1;
+      }
+
 
         // splice data from pipe to fd_out
-        if ((splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1) {
+        if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1) {
             perror("splice");
             return -1;
         }
 
         len -= buf_size;
     }
-    return 1;
+    return bytes;
 }
 
 // TODO: check for splice(2) availability
