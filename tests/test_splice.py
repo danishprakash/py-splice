@@ -2,8 +2,8 @@ import splice
 
 
 TESTFILE = "$testfile"
-BIGFILE_SIZE = 2500000000  # > 2GB
-TEN_MB_DATA = ("12345abcde" * 1024 * 1024)  # 10MB
+BIGFILE_SIZE = (1024*1024*1024)  # 1GB
+SAMPLE_DATA = ("12345abcde" * 1024 * 1024)  # 10MB
 
 
 def _has_large_file_support():
