@@ -25,36 +25,42 @@ size_t fsize(fd) {
 }
 
 // move data from fd_in tp fd_out using splice(2)
-ssize_t splice_copy(int fd_in, int fd_out) {
+ssize_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
     int fd_pipe[2];
+    size_t len;
     size_t buf_size = 128;
-    size_t len = fsize(fd_in);
     size_t bytes = 0;
-    loff_t in_off = 0;
+    loff_t in_off = (loff_t) offset;
     loff_t out_off = 0;
+
+    if (nbytes) {
+      len = nbytes;
+    } else {
+      len = fsize(fd_in);
+    }
 
     if (pipe(fd_pipe) < 0) {
         perror("Error creating pipe");
         return 1;
     }
 
-
     while(len > 0) {
       if (buf_size > len) buf_size = len;
+      
       // splice data to pipe
       if ((bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1) {
         perror("splice");
         return -1;
       }
 
+      // splice data from pipe to fd_out
+      if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1) {
+          perror("splice");
+          return -1;
+      }
 
-        // splice data from pipe to fd_out
-        if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1) {
-            perror("splice");
-            return -1;
-        }
+      len -= buf_size;
 
-        len -= buf_size;
     }
     return bytes;
 }
@@ -62,13 +68,13 @@ ssize_t splice_copy(int fd_in, int fd_out) {
 // TODO: check for splice(2) availability
 static PyObject *
 method_splice(PyObject *self, PyObject *args){
-    int fd_in, fd_out;
+    int fd_in, fd_out, offset, nbytes;
     int status = -1;
 
-    if (!PyArg_ParseTuple(args, "ii", &fd_in, &fd_out))
+    if (!PyArg_ParseTuple(args, "iiii", &fd_in, &fd_out, &offset, &nbytes))
             return NULL;
 
-    status = splice_copy(fd_in, fd_out);
+    status = splice_copy(fd_in, fd_out, offset, nbytes);
     
     return PyLong_FromLong(status);
 }
