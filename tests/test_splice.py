@@ -1,33 +1,40 @@
-import splice
+import pytest
+import tempfile
+
+from splice import splice
 
 
 TESTFILE = "$testfile"
 BIGFILE_SIZE = (1024*1024*1024)  # 1GB
-SAMPLE_DATA = ("12345abcde" * 1024 * 1024)  # 10MB
+SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # 10MB
 
 
-def _has_large_file_support():
-    # taken from Python's Lib/test/test_largefile.py
-    with open(TESTFILE, 'wb', buffering=0) as f:
-        try:
-            f.seek(BIGFILE_SIZE)
-            f.write(('x'))
-            f.flush()
-        except (IOError, OverflowError):
-            return False
-        else:
-            return True
+@pytest.fixture()
+def create_files():
+    # create files for tests (setUp)
+    file_in = tempfile.TemporaryFile()
+    file_out = tempfile.TemporaryFile()
+    file_in.write(SAMPLE_DATA)
+    file_in.seek(0)
+    file_in_contents = file_in.read()
+
+    yield (file_in, file_out, file_in_contents)
+
+    # close file after a test is complete (teardown)
+    file_out.close()
+    file_in.close()
 
 
-def test_simple_file():
-    pass
+def test_simple_file(create_files):
+    (file_in, file_out, file_in_contents) = create_files
+    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
+    assert nbytes == len(file_in_contents)
 
-
-def test_large_file():
-    if _has_large_file_support():
-        # TODO: check here
-        pass
-    pass
+# def test_large_file():
+#     if _has_large_file_support():
+#         # TODO: check here
+#         pass
+#     pass
 
 
 def test_empty_file():
