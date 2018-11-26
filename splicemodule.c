@@ -30,6 +30,7 @@ ssize_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
     size_t len;
     size_t buf_size = 128;
     size_t bytes = 0;
+    size_t total_bytes_sent = 0;
     loff_t in_off = (loff_t) offset;
     loff_t out_off = 0;
 
@@ -60,9 +61,10 @@ ssize_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
       }
 
       len -= buf_size;
+      total_bytes_sent += bytes;
 
     }
-    return bytes;
+    return total_bytes_sent;
 }
 
 // TODO: check for splice(2) availability
