@@ -98,23 +98,31 @@ def test_arguments_not_denoting_file_descriptors():
     pass
 
 
-def test_copy_certain_nbytes():
-    # (file_in, file_out) = create_files
+def test_copy_certain_nbytes(create_files):
+    (file_in, file_out) = create_files
 
-    # file_in.write(SAMPLE_DATA)
-    # file_in.seek(0)
-    # bytes_to_copy = 34
+    file_in.write(SAMPLE_DATA)
+    file_in.seek(0)
+    bytes_to_copy = 2048
+    file_in_contents = file_in.read()
 
-    pass
-
-
-def test_copy_with_zero_offset():
-    pass
+    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, bytes_to_copy)
+    assert nbytes == bytes_to_copy
 
 
-def test_offset_overflow():
-    pass
+def test_offset_overflow(create_files):
+    # TODO: raise OffsetOverflow exception if offset > len
+    (file_in, file_out) = create_files
+
+    # define offset
+    file_in.write(SAMPLE_DATA)
+    file_in.seek(0)
+    file_in_contents = file_in.read()
+    offset = len(file_in_contents) + 1
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
+    assert nbytes == len(file_in_contents[offset:])
 
 
-def test_small_file():
+def test_len_overflow(create_files):
     pass
