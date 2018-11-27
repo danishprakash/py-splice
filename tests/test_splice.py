@@ -14,6 +14,8 @@ def create_files():
     # create files for tests (setUp)
     file_in = tempfile.TemporaryFile()
     file_out = tempfile.TemporaryFile()
+    file_in.write(SAMPLE_DATA)
+    file_in.seek(0)
 
     yield (file_in, file_out)
 
@@ -24,8 +26,6 @@ def create_files():
 
 def test_simple_file(create_files):
     (file_in, file_out) = create_files
-    file_in.write(SAMPLE_DATA)
-    file_in.seek(0)
     file_in_contents = file_in.read()
     nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
     assert nbytes == len(file_in_contents)
@@ -33,30 +33,47 @@ def test_simple_file(create_files):
 
 def test_empty_file(create_files):
     (file_in, file_out) = create_files
-    empty_file_in = tempfile.TemporaryFile()
-    empty_file_in.write(b'')
-    empty_file_in.seek(0)
-    nbytes = splice(empty_file_in.fileno(), file_out.fileno(), 0, len(empty_file_in.read()))
+
+    # empty file 
+    file_in = tempfile.TemporaryFile()
+    file_in.write(b'')
+    file_in.seek(0)
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in.read()))
     assert nbytes == 0
-    empty_file_in.close()
 
 
 def test_large_file(create_files):
     (file_in, file_out) = create_files
+
+    # create a large file
     file_in = tempfile.SpooledTemporaryFile()
-    file_in.write(SAMPLE_DATA * 128)
+    file_in.write(SAMPLE_DATA * 1)
     file_in.seek(0)
     file_in_contents = file_in.read()
-    print("len: " + str(len(file_in_contents)))
+
     nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
     assert nbytes == len(file_in_contents)
+
+
+def test_incomplete_arguments(create_files):
+    (file_in, file_out) = create_files
+
+    with pytest.raises(TypeError):
+        nbytes = splice(file_in.fileno(), file_out.fileno(), 0)
 
 
 def test_no_file():
     pass
 
 
-def test_invalid_file_descriptor():
+def test_invalid_file_descriptor(create_files):
+    # TODO: need proper error to be raised inside
+    # the module
+
+    # (file_in, file_out) = create_files
+    # nbytes = splice(999, file_out.fileno(), 0, len(file_in.read()))
+
     pass
 
 
