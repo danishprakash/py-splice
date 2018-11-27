@@ -81,8 +81,17 @@ def test_nonexistent_file_descriptor():
     pass
 
 
-def test_copy_from_offset():
-    pass
+def test_copy_from_offset(create_files):
+    (file_in, file_out) = create_files
+
+    # define offset
+    offset = 10
+    file_in.write(SAMPLE_DATA)
+    file_in.seek(0)
+    file_in_contents = file_in.read()
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
+    assert nbytes == len(file_in_contents[offset:offset+len(file_in_contents)])
 
 
 def test_arguments_not_denoting_file_descriptors():
