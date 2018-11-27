@@ -85,13 +85,13 @@ def test_copy_from_offset(create_files):
     (file_in, file_out) = create_files
 
     # define offset
-    offset = 10
     file_in.write(SAMPLE_DATA)
     file_in.seek(0)
     file_in_contents = file_in.read()
+    offset = 1024
 
     nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
-    assert nbytes == len(file_in_contents[offset:offset+len(file_in_contents)])
+    assert nbytes == len(file_in_contents[offset:])
 
 
 def test_arguments_not_denoting_file_descriptors():
@@ -99,6 +99,12 @@ def test_arguments_not_denoting_file_descriptors():
 
 
 def test_copy_certain_nbytes():
+    # (file_in, file_out) = create_files
+
+    # file_in.write(SAMPLE_DATA)
+    # file_in.seek(0)
+    # bytes_to_copy = 34
+
     pass
 
 
