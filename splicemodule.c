@@ -11,10 +11,7 @@
 // TODO: custom exceptions
 // TODO: comments and explanation
 // TODO: conditionals for different distros
-// TODO: better return mechanism
 // TODO: function declarations for all
-// TODO: abide by code guidelines for C programming language
-// TODO: make `from pysplice import splice` work
 // TODO: Write tests
 
 // return size of file using file descriptor number
@@ -25,14 +22,15 @@ size_t fsize(fd) {
 }
 
 // move data from fd_in tp fd_out using splice(2)
-ssize_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
+size_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
     int fd_pipe[2];
     size_t len;
-    size_t buf_size = 128;
+    size_t buf_size = 4096;
     size_t bytes = 0;
     size_t total_bytes_sent = 0;
-    loff_t in_off = (loff_t) offset;
-    loff_t out_off = 0;
+    off_t in_off = (off_t)offset;
+    off_t out_off = 0;
+    int i = 0;
 
     if (nbytes) {
       len = nbytes;
@@ -62,7 +60,6 @@ ssize_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
 
       len -= buf_size;
       total_bytes_sent += bytes;
-
     }
     return total_bytes_sent;
 }
