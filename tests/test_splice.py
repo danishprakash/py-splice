@@ -29,6 +29,29 @@ def test_simple_file(create_files):
     assert nbytes == len(file_in_contents)
 
 
+def test_small_file(create_files):
+    (file_in, file_out) = create_files
+    file_in = tempfile.TemporaryFile()
+    file_in.write(b'foo bar')
+    file_in.seek(0)
+    file_in_contents = file_in.read()
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
+    assert nbytes == len(file_in_contents)
+
+
+def test_small_file_with_offset_overflow(create_files):
+    (file_in, file_out) = create_files
+    file_in = tempfile.TemporaryFile()
+    file_in.write(b'foo bar')
+    file_in.seek(0)
+    file_in_contents = file_in.read()
+    offset = 4096
+
+    with pytest.raises(OverflowError):
+        nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
+
+
 def test_empty_file(create_files):
     (file_in, file_out) = create_files
 
@@ -56,33 +79,10 @@ def test_large_file(create_files):
     assert nbytes == len(file_in_contents)
 
 
-def test_incomplete_arguments(create_files):
-    (file_in, file_out) = create_files
-
-    with pytest.raises(TypeError):
-        nbytes = splice(file_in.fileno(), file_out.fileno(), 0)
-
-
-def test_no_file():
-    # not sure if this is required since splice() requires
-    # file descriptors to be passed and if there is no file available
-    # we won't be able to access the file descriptor.
-    pass
-
-
-def test_invalid_file_descriptor(create_files):
-    (file_in, file_out) = create_files
-    file_in_contents = file_in.read()
-
-    with pytest.raises(ValueError):
-        nbytes = splice(999, file_out.fileno(), 0, len(file_in_contents))
-
-
 def test_copy_from_certain_offset(create_files):
     (file_in, file_out) = create_files
     file_in_contents = file_in.read()
 
-    # define offset
     offset = 1024
 
     nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
@@ -107,11 +107,9 @@ def test_copy_certain_nbytes(create_files):
 
 
 def test_offset_overflow(create_files):
-    # TODO: raise OffsetOverflow exception if offset > len
     (file_in, file_out) = create_files
     file_in_contents = file_in.read()
 
-    # define offset
     offset = len(file_in_contents) + 1
 
     with pytest.raises(OverflowError):
@@ -124,3 +122,18 @@ def test_len_overflow(create_files):
 
     with pytest.raises(OverflowError):
         nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents)+1)
+
+
+def test_incomplete_arguments(create_files):
+    (file_in, file_out) = create_files
+
+    with pytest.raises(TypeError):
+        nbytes = splice(file_in.fileno(), file_out.fileno(), 0)
+
+
+def test_invalid_file_descriptor(create_files):
+    (file_in, file_out) = create_files
+    file_in_contents = file_in.read()
+
+    with pytest.raises(ValueError):
+        nbytes = splice(999, file_out.fileno(), 0, len(file_in_contents))
