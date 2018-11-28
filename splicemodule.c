@@ -8,13 +8,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// TODO: custom exceptions
 // TODO: comments and explanation
 // TODO: conditionals for different distros
 // TODO: function declarations for all
-// TODO: Write tests
 
-static PyObject *OffsetOverflowError;
+// declarations
+int is_fd_valid(int);
+size_t fsize(int);
+size_t splice_copy(int, int, int, size_t);
+static PyObject *method_splice(PyObject *, PyObject *);
+PyMODINIT_FUNC PyInit_splice();
 
 // return size of file using file descriptor number
 size_t fsize(fd) {
@@ -23,6 +26,7 @@ size_t fsize(fd) {
     return fsize;
 }
 
+// check if file descriptor is valid
 int is_fd_valid(fd) {
   return fcntl(fd, F_GETFD);
 }
@@ -114,8 +118,6 @@ static struct PyModuleDef splicemodule = {
 
 PyMODINIT_FUNC
 PyInit_splice(void) {
-    OffsetOverflowError = PyErr_NewException("splice.OffsetOverflowError", NULL, NULL);
-
     return PyModule_Create(&splicemodule);
 }
 
