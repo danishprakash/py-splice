@@ -3,10 +3,7 @@ import tempfile
 
 from splice import splice
 
-
-TESTFILE = "$testfile"
-BIGFILE_SIZE = (1024*1024*1024)  # 1GB
-SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # 10MB
+SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # ~10MB
 
 
 @pytest.fixture()
@@ -19,7 +16,7 @@ def create_files():
 
     yield (file_in, file_out)
 
-    # close file after a test is complete (teardown)
+    # close files after a test is complete (teardown)
     file_out.close()
     file_in.close()
 
@@ -27,6 +24,7 @@ def create_files():
 def test_simple_file(create_files):
     (file_in, file_out) = create_files
     file_in_contents = file_in.read()
+
     nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
     assert nbytes == len(file_in_contents)
 
@@ -38,8 +36,10 @@ def test_empty_file(create_files):
     file_in = tempfile.TemporaryFile()
     file_in.write(b'')
     file_in.seek(0)
+    file_in_contents = file_in.read()
 
-    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in.read()))
+    assert len(file_in_contents) == 0
+    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents))
     assert nbytes == 0
 
 
@@ -48,7 +48,7 @@ def test_large_file(create_files):
 
     # create a large file
     file_in = tempfile.SpooledTemporaryFile()
-    file_in.write(SAMPLE_DATA * 1)
+    file_in.write(SAMPLE_DATA * 1)  # set to * 1024 when automating tests (~1GB)
     file_in.seek(0)
     file_in_contents = file_in.read()
 
@@ -64,47 +64,43 @@ def test_incomplete_arguments(create_files):
 
 
 def test_no_file():
+    # not sure if this is required since splice() requires
+    # file descriptors to be passed and if there is no file available
+    # we won't be able to access the file descriptor.
     pass
 
 
 def test_invalid_file_descriptor(create_files):
-    # TODO: need proper error to be raised inside
-    # the module
-
-    # (file_in, file_out) = create_files
-    # nbytes = splice(999, file_out.fileno(), 0, len(file_in.read()))
-
-    pass
-
-
-def test_nonexistent_file_descriptor():
-    pass
-
-
-def test_copy_from_offset(create_files):
     (file_in, file_out) = create_files
+    file_in_contents = file_in.read()
+
+    with pytest.raises(ValueError):
+        nbytes = splice(999, file_out.fileno(), 0, len(file_in_contents))
+
+
+def test_copy_from_certain_offset(create_files):
+    (file_in, file_out) = create_files
+    file_in_contents = file_in.read()
 
     # define offset
-    file_in.write(SAMPLE_DATA)
-    file_in.seek(0)
-    file_in_contents = file_in.read()
     offset = 1024
 
     nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
     assert nbytes == len(file_in_contents[offset:])
 
 
-def test_arguments_not_denoting_file_descriptors():
-    pass
+def test_arguments_not_denoting_file_descriptors(create_files):
+    (file_in, file_out) = create_files
+
+    with pytest.raises(TypeError):
+        nbytes = splice('test', file_out.fileno(), 0, 0)
 
 
 def test_copy_certain_nbytes(create_files):
     (file_in, file_out) = create_files
-
-    file_in.write(SAMPLE_DATA)
-    file_in.seek(0)
-    bytes_to_copy = 2048
     file_in_contents = file_in.read()
+
+    bytes_to_copy = 2048
 
     nbytes = splice(file_in.fileno(), file_out.fileno(), 0, bytes_to_copy)
     assert nbytes == bytes_to_copy
@@ -113,16 +109,18 @@ def test_copy_certain_nbytes(create_files):
 def test_offset_overflow(create_files):
     # TODO: raise OffsetOverflow exception if offset > len
     (file_in, file_out) = create_files
+    file_in_contents = file_in.read()
 
     # define offset
-    file_in.write(SAMPLE_DATA)
-    file_in.seek(0)
-    file_in_contents = file_in.read()
     offset = len(file_in_contents) + 1
 
-    nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
-    assert nbytes == len(file_in_contents[offset:])
+    with pytest.raises(OverflowError):
+        nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_contents))
 
 
 def test_len_overflow(create_files):
-    pass
+    (file_in, file_out) = create_files
+    file_in_contents = file_in.read()
+
+    with pytest.raises(OverflowError):
+        nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_contents)+1)
