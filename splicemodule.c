@@ -14,6 +14,8 @@
 // TODO: function declarations for all
 // TODO: Write tests
 
+static PyObject *OffsetOverflowError;
+
 // return size of file using file descriptor number
 size_t fsize(fd) {
     size_t fsize;
@@ -21,22 +23,19 @@ size_t fsize(fd) {
     return fsize;
 }
 
+int is_fd_valid(fd) {
+  return fcntl(fd, F_GETFD);
+}
+
 // move data from fd_in tp fd_out using splice(2)
-size_t splice_copy(int fd_in, int fd_out, int offset, int nbytes) {
+size_t splice_copy(int fd_in, int fd_out, int offset, size_t len) {
     int fd_pipe[2];
-    size_t len;
     size_t buf_size = 4096;
     size_t bytes = 0;
     size_t total_bytes_sent = 0;
     off_t in_off = (off_t)offset;
     off_t out_off = 0;
-    int i = 0;
 
-    if (nbytes) {
-      len = nbytes;
-    } else {
-      len = fsize(fd_in);
-    }
 
     if (pipe(fd_pipe) < 0) {
         perror("Error creating pipe");
@@ -69,11 +68,33 @@ static PyObject *
 method_splice(PyObject *self, PyObject *args){
     int fd_in, fd_out, offset, nbytes;
     int status = -1;
+    size_t len;
 
     if (!PyArg_ParseTuple(args, "iiii", &fd_in, &fd_out, &offset, &nbytes))
             return NULL;
 
-    status = splice_copy(fd_in, fd_out, offset, nbytes);
+    if (is_fd_valid(fd_in, fd_out) == -1 || is_fd_valid(fd_out) == -1) {
+      PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
+      return NULL;
+    }
+
+    if (nbytes) {
+      if (nbytes > fsize(fd_in)){
+        PyErr_SetString(PyExc_OverflowError, "Length overflow error");
+        return NULL;
+      }
+      len = nbytes;
+    } else {
+      len = (size_t)fsize(fd_in);
+    }
+    
+    // TODO: all of the error checking and raising exceptions would be done here
+    if (offset > len) {
+      PyErr_SetString(PyExc_OverflowError, "Offset overflow error");
+      return NULL;
+    }
+
+    status = splice_copy(fd_in, fd_out, offset, len);
     
     return PyLong_FromLong(status);
 }
@@ -93,16 +114,20 @@ static struct PyModuleDef splicemodule = {
 
 PyMODINIT_FUNC
 PyInit_splice(void) {
+    OffsetOverflowError = PyErr_NewException("splice.OffsetOverflowError", NULL, NULL);
+
     return PyModule_Create(&splicemodule);
 }
 
 int main(int argc, char *argv[])
 {
     wchar_t *program = Py_DecodeLocale(argv[0], NULL);
+
     if (program == NULL) {
         fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
         exit(1);
     }
+
 
     /* Add a built-in module, before Py_Initialize */
     PyImport_AppendInittab("splice", PyInit_splice);
