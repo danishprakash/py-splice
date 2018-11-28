@@ -63,13 +63,13 @@ def test_small_file_with_offset_overflow(create_files):
     offset = 4096
 
     with pytest.raises(OverflowError):
-        nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_content))
+        splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_content))
 
 
 def test_empty_file(create_files):
     (file_in, file_out) = create_files
 
-    # empty file 
+    # empty file
     file_in = tempfile.TemporaryFile()
     file_in.write(b'')
     file_in.seek(0)
@@ -91,7 +91,7 @@ def test_large_file(create_files):
 
     # create a large file
     file_in = tempfile.SpooledTemporaryFile()
-    file_in.write(SAMPLE_DATA * 1)  # set to * 1024 when automating tests (~1GB)
+    file_in.write(SAMPLE_DATA * 1)  # * 1024 when automating tests (~1GB)
     file_in.seek(0)
     file_in_content = file_in.read()
 
@@ -123,7 +123,7 @@ def test_arguments_not_denoting_file_descriptors(create_files):
     (file_in, file_out) = create_files
 
     with pytest.raises(TypeError):
-        nbytes = splice('test', file_out.fileno(), 0, 0)
+        splice('test', file_out.fileno(), 0, 0)
 
 
 def test_copy_certain_nbytes(create_files):
@@ -149,7 +149,7 @@ def test_offset_overflow(create_files):
     offset = len(file_in_content) + 1
 
     with pytest.raises(OverflowError):
-        nbytes = splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_content))
+        splice(file_in.fileno(), file_out.fileno(), offset, len(file_in_content))
 
 
 def test_len_overflow(create_files):
@@ -157,14 +157,14 @@ def test_len_overflow(create_files):
     file_in_content = file_in.read()
 
     with pytest.raises(OverflowError):
-        nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_content)+1)
+        splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_content)+1)
 
 
 def test_incomplete_arguments(create_files):
     (file_in, file_out) = create_files
 
     with pytest.raises(TypeError):
-        nbytes = splice(file_in.fileno(), file_out.fileno(), 0)
+        splice(file_in.fileno(), file_out.fileno(), 0)
 
 
 def test_invalid_file_descriptor(create_files):
@@ -172,4 +172,4 @@ def test_invalid_file_descriptor(create_files):
     file_in_content = file_in.read()
 
     with pytest.raises(ValueError):
-        nbytes = splice(999, file_out.fileno(), 0, len(file_in_content))
+        splice(999, file_out.fileno(), 0, len(file_in_content))
