@@ -34,7 +34,7 @@ fsize(fd)
 int 
 is_fd_valid(fd)
 {
-  return fcntl(fd, F_GETFD);
+    return fcntl(fd, F_GETFD);
 }
 
 // splice(2) syscall
@@ -57,24 +57,24 @@ splice_copy(int fd_in, int fd_out, int offset, size_t len)
 
     while(len > 0)
     {
-      if (buf_size > len) buf_size = len;
-      
-      // splice data to pipe
-      if ((bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1)
-      {
-        perror("Error moving data from `fd_in`");
-        return -1;
-      }
+        if (buf_size > len) buf_size = len;
 
-      // splice data from pipe to fd_out
-      if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1)
-      {
-        perror("Error moving data to `fd_out`");
-        return -1;
-      }
+        // splice data to pipe
+        if ((bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1)
+        {
+            perror("Error moving data from `fd_in`");
+            return -1;
+        }
 
-      len -= buf_size;
-      total_bytes_sent += bytes;
+        // splice data from pipe to fd_out
+        if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1)
+        {
+            perror("Error moving data to `fd_out`");
+            return -1;
+        }
+
+        len -= buf_size;
+        total_bytes_sent += bytes;
     }
     return total_bytes_sent;
 }
@@ -88,37 +88,37 @@ method_splice(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "iiii", &fd_in, &fd_out, &offset, &nbytes))
     {
-            return NULL;
+        return NULL;
     }
 
     if (is_fd_valid(fd_in) == -1 || is_fd_valid(fd_out) == -1)
     {
-      PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
-      return NULL;
+        PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
+        return NULL;
     }
 
     if (nbytes)
     {
-      if (nbytes > fsize(fd_in))
-      {
-        PyErr_SetString(PyExc_OverflowError, "Length overflow error");
-        return NULL;
-      }
-      len = nbytes;
+        if (nbytes > fsize(fd_in))
+        {
+            PyErr_SetString(PyExc_OverflowError, "Length overflow error");
+            return NULL;
+        }
+        len = nbytes;
     }
     else
     {
-      len = (size_t)fsize(fd_in);
+        len = (size_t)fsize(fd_in);
     }
-    
+
     if (offset > len)
     {
-      PyErr_SetString(PyExc_OverflowError, "Offset overflow error");
-      return NULL;
+        PyErr_SetString(PyExc_OverflowError, "Offset overflow error");
+        return NULL;
     }
 
     status = splice_copy(fd_in, fd_out, offset, len);
-    
+
     return PyLong_FromLong(status);
 }
 
@@ -138,35 +138,21 @@ static struct PyModuleDef splicemodule = {
 PyMODINIT_FUNC
 PyInit_splice(void)
 {
-    return PyModule_Create(&splicemodule);
-}
+    PyObject *module;
+    module = PyModule_Create(&splicemodule);
 
-int main(int argc, char *argv[])
-{
-    wchar_t *program = Py_DecodeLocale(argv[0], NULL);
+#ifdef SPLICE_F_MOVE
+    PyModule_AddIntConstant(module, "SPLICE_F_MOVE", SPLICE_F_MOVE);
+#endif
+#ifdef SPLICE_F_NONBLOCK
+    PyModule_AddIntConstant(module, "SPLICE_F_NONBLOCK", SPLICE_F_NONBLOCK);
+#endif
+#ifdef SPLICE_F_MORE
+    PyModule_AddIntConstant(module, "SPLICE_F_MORE", SPLICE_F_MORE);
+#endif
+#ifdef SPLICE_F_GIFT
+    PyModule_AddIntConstant(module, "SPLICE_F_GIFT", SPLICE_F_GIFT);
+#endif    
 
-    if (program == NULL)
-    {
-        fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
-        exit(1);
-    }
-
-
-    /* Add a built-in module, before Py_Initialize */
-    PyImport_AppendInittab("splice", PyInit_splice);
-
-    /* Pass argv[0] to the Python interpreter */
-    Py_SetProgramName(program);
-
-    /* Initialize the Python interpreter.  Required. */
-    Py_Initialize();
-
-    /* Optionally import the module; alternatively,
-       import can be deferred until the embedded script
-       imports it. */
-    PyImport_ImportModule("splice");
-
-    PyMem_RawFree(program);
-
-    return 0;
+    return module;
 }
