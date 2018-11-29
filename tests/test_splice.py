@@ -1,7 +1,7 @@
 import pytest
 import tempfile
 
-from splice import splice
+from splice import splice, SPLICE_F_MORE
 
 SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # ~10MB
 
@@ -25,7 +25,7 @@ def test_simple_file(create_files):
     (file_in, file_out) = create_files
     file_in_content = file_in.read()
 
-    nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_content))
+    nbytes = splice(file_in.fileno(), file_out.fileno())
     file_out_content = file_out.read()
 
     assert nbytes == len(file_in_content)
@@ -173,3 +173,19 @@ def test_invalid_file_descriptor(create_files):
 
     with pytest.raises(ValueError):
         splice(999, file_out.fileno(), 0, len(file_in_content))
+
+
+def test_small_file_with_flag(create_files):
+    pass
+
+
+def test_small_file_with_flags(create_files):
+    pass
+
+
+def test_large_file_with_flag(create_files):
+    pass
+
+
+def test_large_file_with_flags(create_files):
+    pass
