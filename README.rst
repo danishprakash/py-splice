@@ -14,7 +14,7 @@ address space and user address space.  It transfers up to len bytes
 of data from the file descriptor fd_in to the file descriptor fd_out,
 where one of the file descriptors must refer to a pipe.
 
-Zero Copy
+Zero-copy
 ---------
 Ideally when you copy data from one data stream to another, the data
 to be copied is first stored in a buffer in userspace and then it is
@@ -49,52 +49,6 @@ system call (and thus only one context switch), rather than the series of
 `write(2) <http://linux.die.net/man/2/write>`__ system calls (each system call
 requiring a context switch) used internally for the data copying.
 
-.. code-block:: python
-
-    import socket
-    import os
-    from sendfile import sendfile
-
-    file = open("somefile", "rb")
-    blocksize = os.path.getsize("somefile")
-    sock = socket.socket()
-    sock.connect(("127.0.0.1", 8021))
-    offset = 0
-
-    while True:
-        sent = sendfile(sock.fileno(), file.fileno(), offset, blocksize)
-        offset += sent
-        if sent == 0:
-            break  # EOF
-
-
-=====================
-Why would I use this?
-=====================
-
-Add benchmarks and reasoning for this here.
-
-This `benchmark script <https://github.com/giampaolo/pysendfile/blob/master/test/benchmark.py>`__
-implements the two examples above and compares plain socket.send() and
-sendfile() performances in terms of CPU time spent and bytes transmitted per
-second resulting in sendfile() being about **2.5x faster**. These are the
-results I get on my Linux 2.6.38 box, AMD dual-core 1.6 GHz:
-
-*send()*
-
-+---------------+-----------------+
-| CPU time      | 28.84 usec/pass |
-+---------------+-----------------+
-| transfer rate | 359.38 MB/sec   |
-+---------------+-----------------+
-
-*splice()*
-
-+---------------+-----------------+
-| CPU time      | 11.28 usec/pass |
-+---------------+-----------------+
-| transfer rate | 860.88 MB/sec   |
-+---------------+-----------------+
 
 =================
 API Documentation
@@ -117,6 +71,16 @@ sendfile module provides a single function: sendfile().
 - ``splice.SPLICE_F_NONBLOCK``
 - ``splice.SPLICE_F_MORE``
 - ``splice.SPLICE_F_GIFT``
+
+
+=====================
+Why would I use this?
+=====================
+By not interacting with userspace while copying data betweek files, ``splice(2)``
+is said to perform. There is no benchmark for this available yet,
+but I'm looking at writing a simple benchmark script for this, similar to
+`this <url>`__. 
+
 
 ===================
 Supported platforms
