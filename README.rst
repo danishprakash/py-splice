@@ -1,12 +1,10 @@
-======
 splice
 ======
 
 A Python interface to splice(2) system call
 
-=====
 About
-=====
+-----
 
 `splice() <http://man7.org/linux/man-pages/man2/splice.2.html>`__ moves
 data between two file descriptors without copying between kernel
@@ -15,12 +13,11 @@ of data from the file descriptor fd_in to the file descriptor fd_out,
 where one of the file descriptors must refer to a pipe.
 
 Zero-copy
----------
+~~~~~~~~~
 Ideally when you copy data from one data stream to another, the data
 to be copied is first stored in a buffer in userspace and then it is
-again copied back to the target data stream from the user space. This
-introduces a certain overhead which stems from copying of data to and 
-from the userspace.
+again copied back to the target data stream from the user space which
+introduces a certain overhead.
 
 Zero-copy allows us to operate on data without the use of copying 
 data to userspace. It essentialy copies the data by remapping pages
@@ -50,9 +47,8 @@ system call (and thus only one context switch), rather than the series of
 requiring a context switch) used internally for the data copying.
 
 
-=================
 API Documentation
-=================
+-----------------
 
 sendfile module provides a single function: sendfile().
 
@@ -61,7 +57,7 @@ sendfile module provides a single function: sendfile().
   Copy *nbytes* bytes from file descriptor *in* (a regular file) to file
   descriptor *out* (a regular file) starting at *offset*. Return the number of
   bytes just being sent. When the end of file is reached return 0.
-  On Linux, if *offset* is given as *None*, the bytes are read from the current
+  On Linux, if *offset* is given as *None*, the bytes are read from the current999999
   position of *in* and the position of *in* is updated.
   *headers* and *trailers* are strings that are written before and after the
   data from *in* is written. In cross platform applications their usage is
@@ -73,29 +69,30 @@ sendfile module provides a single function: sendfile().
 - ``splice.SPLICE_F_GIFT``
 
 
-=====================
+
 Why would I use this?
-=====================
-By not interacting with userspace while copying data betweek files, ``splice(2)``
-is said to perform. There is no benchmark for this available yet,
+---------------------
+By not interacting with userspace while copying data between files, ``splice(2)``
+is said to perform considerably faster than traditional copying methods. There is no benchmark for this available yet,
 but I'm looking at writing a simple benchmark script for this, similar to
 `this <url>`__. 
 
 
-===================
+
 Supported platforms
-===================
+-------------------
 
 This system call is (GNU)Linux-specific. 
 
-=======
+
 Support
-=======
+-------
 
 Feel free to add improvements, report issues or contact me about anything related to the project.
 
-=======
+
 LICENSE
-=======
+-------
 
 MIT
+
