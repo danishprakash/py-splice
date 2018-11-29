@@ -19,7 +19,7 @@ size_t fsize(int);
 int is_fd_valid(int);
 PyMODINIT_FUNC PyInit_splice();
 size_t splice_copy(int, int, int, size_t);
-static PyObject *method_splice(PyObject *, PyObject *);
+static PyObject *method_splice(PyObject *, PyObject *, PyObject *);
 
 // return size of file using file descriptor 
 size_t 
@@ -80,18 +80,21 @@ splice_copy(int fd_in, int fd_out, int offset, size_t len)
 }
 
 static PyObject *
-method_splice(PyObject *self, PyObject *args)
+method_splice(PyObject *self, PyObject *args, PyObject *kwdict)
 {
-    int fd_in, fd_out, offset, nbytes;
-    int status = -1;
+    int out, in;
+    int status = -1, offset = 0, flags = 0, nbytes = 0;
     size_t len;
+    static char *keywords[] = {"in", "out", "offset", "nbytes", "flags", NULL};
 
-    if (!PyArg_ParseTuple(args, "iiii", &fd_in, &fd_out, &offset, &nbytes))
+    if (!PyArg_ParseTupleAndKeywords(args, kwdict,
+                                     "ii|iii",
+                                     keywords, &in, &out, &offset, &nbytes, &flags))
     {
         return NULL;
     }
 
-    if (is_fd_valid(fd_in) == -1 || is_fd_valid(fd_out) == -1)
+    if (is_fd_valid(in) == -1 || is_fd_valid(out) == -1)
     {
         PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
         return NULL;
@@ -99,7 +102,7 @@ method_splice(PyObject *self, PyObject *args)
 
     if (nbytes)
     {
-        if (nbytes > fsize(fd_in))
+        if (nbytes > fsize(in))
         {
             PyErr_SetString(PyExc_OverflowError, "Length overflow error");
             return NULL;
@@ -108,7 +111,7 @@ method_splice(PyObject *self, PyObject *args)
     }
     else
     {
-        len = (size_t)fsize(fd_in);
+        len = (size_t)fsize(in);
     }
 
     if (offset > len)
@@ -117,13 +120,13 @@ method_splice(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    status = splice_copy(fd_in, fd_out, offset, len);
+    status = splice_copy(in, out, offset, len);
 
     return PyLong_FromLong(status);
 }
 
 static PyMethodDef SpliceMethods[] = {
-    {"splice",  method_splice, METH_VARARGS, "Python interace for splice(2) system call."},
+    {"splice",  method_splice, METH_VARARGS | METH_KEYWORDS, "Python interace for splice(2) system call."},
     {NULL, NULL, 0, NULL}
 };
 
