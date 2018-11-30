@@ -1,7 +1,11 @@
 import pytest
 import tempfile
 
-from splice import splice, SPLICE_F_MORE
+from splice import splice
+from splice import SPLICE_F_MORE
+from splice import SPLICE_F_MOVE
+from splice import SPLICE_F_GIFT
+from splice import SPLICE_F_NONBLOCK
 
 SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # ~10MB
 
@@ -34,6 +38,37 @@ def test_simple_file(create_files):
     assert hash(file_out_content) == hash(file_in_content)
 
 
+def test_simple_file_with_all_optional_args(create_files):
+    (file_in, file_out) = create_files
+    file_in_content = file_in.read()
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(),\
+                    offset=0, nbytes=len(file_in_content), flags=SPLICE_F_MORE)
+
+    file_out_content = file_out.read()
+
+    assert nbytes == len(file_in_content)
+    assert nbytes == len(file_out_content)
+    assert len(file_out_content) == len(file_in_content)
+    assert hash(file_out_content) == hash(file_in_content)
+
+
+def test_simple_file_with_all_flags(create_files):
+    (file_in, file_out) = create_files
+    file_in_content = file_in.read()
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(),
+                    flags=SPLICE_F_MORE | SPLICE_F_MOVE | SPLICE_F_NONBLOCK
+                    | SPLICE_F_GIFT)
+
+    file_out_content = file_out.read()
+
+    assert nbytes == len(file_in_content)
+    assert nbytes == len(file_out_content)
+    assert len(file_out_content) == len(file_in_content)
+    assert hash(file_out_content) == hash(file_in_content)
+
+
 def test_small_file(create_files):
     (file_in, file_out) = create_files
 
@@ -44,6 +79,24 @@ def test_small_file(create_files):
     file_in_content = file_in.read()
 
     nbytes = splice(file_in.fileno(), file_out.fileno(), 0, len(file_in_content))
+    file_out_content = file_out.read()
+
+    assert nbytes == len(file_in_content)
+    assert nbytes == len(file_out_content)
+    assert len(file_out_content) == len(file_in_content)
+    assert hash(file_in_content) == hash(file_out_content)
+
+
+def test_small_file_with_flag(create_files):
+    (file_in, file_out) = create_files
+
+    # create small file
+    file_in = tempfile.TemporaryFile()
+    file_in.write(b'foo bar')
+    file_in.seek(0)
+    file_in_content = file_in.read()
+
+    nbytes = splice(file_in.fileno(), file_out.fileno(), flags=SPLICE_F_MORE)
     file_out_content = file_out.read()
 
     assert nbytes == len(file_in_content)
@@ -164,7 +217,10 @@ def test_incomplete_arguments(create_files):
     (file_in, file_out) = create_files
 
     with pytest.raises(TypeError):
-        splice(file_in.fileno(), file_out.fileno(), 0)
+        splice(file_out.fileno(), offset=0)
+
+    with pytest.raises(TypeError):
+        splice(file_in.fileno(), offset=0)
 
 
 def test_invalid_file_descriptor(create_files):
@@ -173,19 +229,3 @@ def test_invalid_file_descriptor(create_files):
 
     with pytest.raises(ValueError):
         splice(999, file_out.fileno(), 0, len(file_in_content))
-
-
-def test_small_file_with_flag(create_files):
-    pass
-
-
-def test_small_file_with_flags(create_files):
-    pass
-
-
-def test_large_file_with_flag(create_files):
-    pass
-
-
-def test_large_file_with_flags(create_files):
-    pass
