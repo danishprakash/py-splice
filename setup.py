@@ -3,7 +3,7 @@
 from distutils.core import setup, Extension
 
 NAME = 'py-splice'
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
           description='A Python interface to splice(2)',
           long_description=open('README.rst', 'r').read(),
           author='Danish Prakash',
-          author_email='danishprakash <at> outlook <dot> com',
+          author_email='danishprakash@outlook.com',
           platforms='UNIX',
           license='GPL',
           keywords=['splice', 'python', 'performance', 'zero-copy'],
