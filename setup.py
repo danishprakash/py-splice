@@ -2,13 +2,13 @@
 
 from distutils.core import setup, Extension
 
-NAME = 'splice'
+NAME = 'py-splice'
 VERSION = '1.0.1'
 
 
 def main():
     setup(name=NAME,
-          url='https://github.com/danishprakash/python-splice',
+          url='https://github.com/danishprakash/py-splice',
           version=VERSION,
           description='A Python interface to splice(2)',
           long_description=open('README.rst', 'r').read(),
