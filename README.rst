@@ -84,7 +84,7 @@ sendfile module provides a single function: sendfile().
   - ``in``: file descriptor of the file from which data is to be read.
   - ``out``: file descriptor of the file to which data is to be transferred.
 
-  **Positional optional arguments**
+  **Optional positional arguments**
   
   - ``offset``: offset from where the input file is read from.
   - ``nbytes``: number of bytes to be copied in total, default value
@@ -140,7 +140,8 @@ Why would I use this?
 ``splice(2)`` is supposed to be better in terms of performance when compared
 to traditional read/write methods since it avoids overhead of copying the
 data to user address space and instead, does the transfer by remapping pages
-in kernel address space.
+in kernel address space. There can be many uses for this especially if
+performance is important to the task at hand.
 
 
 Supported platforms
