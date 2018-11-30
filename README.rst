@@ -47,6 +47,23 @@ system call (and thus only one context switch), rather than the series of
 `write(2) <http://linux.die.net/man/2/write>`__ system calls (each system call
 requiring a context switch) used internally for the data copying.
 
+Installation
+------------
+
+**pip**
+
+.. code-block:: sh
+
+    $ pip install py-splice
+
+
+**manual**
+
+.. code-block:: sh
+
+    $ git clone https://github.com/danishprakash/py-splice && cd py-splice
+    $ python3 setup.py install
+
 
 API Documentation
 -----------------
