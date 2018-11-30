@@ -4,7 +4,7 @@ import tempfile
 from splice import splice
 from splice import SPLICE_F_MORE, SPLICE_F_MOVE, SPLICE_F_GIFT, SPLICE_F_NONBLOCK
 
-SAMPLE_DATA = (b"12345abcde" * 1024 * 1024)  # ~10MB
+SAMPLE_DATA = (b'12345abcde' * 1024 * 1024)  # ~10MB
 
 
 @pytest.fixture()
