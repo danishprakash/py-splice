@@ -8,20 +8,19 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// TODO: comments and explanation
-// TODO: conditionals for different distros
-// TODO: function declarations for all
-// TODO: sane perror args
-// TODO: structure error handling part
+/* TODO: comments and explanation */
+/* TODO: conditionals for different distros */
+/* TODO: pass flags to splice(2) calls */
 
-// function declarations
+/* function declarations */
 size_t fsize(int);
 int is_fd_valid(int);
 PyMODINIT_FUNC PyInit_splice();
 size_t splice_copy(int, int, int, size_t);
+int validate_arguments(int, int, int, int *);
 static PyObject *method_splice(PyObject *, PyObject *, PyObject *);
 
-// return size of file using file descriptor 
+/* return size of file using file descriptor  */
 size_t 
 fsize(fd)
 {
@@ -30,24 +29,24 @@ fsize(fd)
     return fsize;
 }
 
-// check if file descriptor is valid
+/* check if file descriptor is valid */
 int 
 is_fd_valid(fd)
 {
     return fcntl(fd, F_GETFD);
 }
 
-// splice(2) syscall
+/* splice(2) syscall */
 size_t 
 splice_copy(int fd_in, int fd_out, int offset, size_t len)
 {
     int fd_pipe[2];
+    int flags = 0;
     size_t buf_size = 4096;
     size_t bytes = 0;
     size_t total_bytes_sent = 0;
     off_t in_off = (off_t)offset;
     off_t out_off = 0;
-
 
     if (pipe(fd_pipe) < 0)
     {
@@ -59,15 +58,17 @@ splice_copy(int fd_in, int fd_out, int offset, size_t len)
     {
         if (buf_size > len) buf_size = len;
 
-        // splice data to pipe
-        if ((bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, SPLICE_F_MOVE)) == -1)
+        /* splice data to pipe */
+        bytes = splice(fd_in, &in_off, fd_pipe[1], NULL, buf_size, flags);
+        if (bytes == -1)
         {
             perror("Error moving data from `fd_in`");
             return -1;
         }
 
-        // splice data from pipe to fd_out
-        if ((bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, SPLICE_F_MOVE)) == -1)
+        /* splice data from pipe to fd_out */
+        bytes = splice(fd_pipe[0], NULL, fd_out, &out_off, buf_size, flags);
+        if (bytes == -1)
         {
             perror("Error moving data to `fd_out`");
             return -1;
@@ -79,48 +80,59 @@ splice_copy(int fd_in, int fd_out, int offset, size_t len)
     return total_bytes_sent;
 }
 
+/* validate arguments */
+/* static PyObject * */
+int
+validate_arguments(int in, int out, int offset, int *nbytes)
+{
+    if (is_fd_valid(in) == -1 || is_fd_valid(out) == -1)
+    {
+        PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
+        return -1;
+    }
+
+    if (*nbytes)
+    {
+        if (*nbytes > fsize(in))
+        {
+            PyErr_SetString(PyExc_OverflowError, "Length overflow error");
+            return -1;
+        }
+    }
+    else
+    {
+        *nbytes = (size_t)fsize(in);
+    }
+
+    if (offset > *nbytes)
+    {
+        PyErr_SetString(PyExc_OverflowError, "Offset overflow error");
+        return -1;
+    }
+    return 1;
+}
+
 static PyObject *
 method_splice(PyObject *self, PyObject *args, PyObject *kwdict)
 {
-    int out, in;
+    int flag = 0;
+    int out = -1, in = -1;
     int status = -1, offset = 0, flags = 0, nbytes = 0;
-    size_t len;
     static char *keywords[] = {"in", "out", "offset", "nbytes", "flags", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "ii|iii",
+    if (!PyArg_ParseTupleAndKeywords(args, kwdict, "ii|iii",
                                      keywords, &in, &out, &offset, &nbytes, &flags))
     {
         return NULL;
     }
 
-    if (is_fd_valid(in) == -1 || is_fd_valid(out) == -1)
+    flag = validate_arguments(in, out, offset, &nbytes);
+    if (flag == -1) 
     {
-        PyErr_SetString(PyExc_ValueError, "Invalid file descriptor");
         return NULL;
     }
 
-    if (nbytes)
-    {
-        if (nbytes > fsize(in))
-        {
-            PyErr_SetString(PyExc_OverflowError, "Length overflow error");
-            return NULL;
-        }
-        len = nbytes;
-    }
-    else
-    {
-        len = (size_t)fsize(in);
-    }
-
-    if (offset > len)
-    {
-        PyErr_SetString(PyExc_OverflowError, "Offset overflow error");
-        return NULL;
-    }
-
-    status = splice_copy(in, out, offset, len);
+    status = splice_copy(in, out, offset, (size_t)nbytes);
 
     return PyLong_FromLong(status);
 }
