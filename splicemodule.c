@@ -1,12 +1,26 @@
+/*
+ * py-splice
+ *
+ * A Python module interface to splice(2)
+ *
+ * move data bw two file descriptors without copying bw
+ * kernal address space and user address space.
+ *
+ * It transfers up to len bytes of data from the file descriptor fd_in 
+ * to the file descriptor fd_out, where one of the file descriptors must
+ * refer to a pipe.
+ *
+ * Author:
+ *      2018 Danish Prakash <danishprakash <at> outlook <dot> com>
+ *
+ * License:
+ *      GNU General Public License
+ */
+
 #define _GNU_SOURCE
 
 #include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <Python.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 /* function declarations */
 size_t fsize(int);
