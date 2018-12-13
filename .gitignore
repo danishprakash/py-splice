@@ -2,6 +2,7 @@ a.out
 .DS_Store
 
 __pycache__/
+dist/
 build/
 MANIFEST
 
