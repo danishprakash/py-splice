@@ -1,3 +1,16 @@
+.. image:: http://pepy.tech/badge/py-splice
+    :target: http://pepy.tech/project/py-splice/
+    :alt: Downloads
+
+.. image:: https://img.shields.io/pypi/v/py-splice.svg
+    :target: https://pypi.python.org/pypi/py-splice/
+    :alt: Latest version 
+
+.. image:: https://img.shields.io/pypi/l/py-splice.svg
+    :target: https://pypi.python.org/pypi/py-splice/
+    :alt: License
+
+
 splice
 ======
 
